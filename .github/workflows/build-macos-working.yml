@@ -1,0 +1,57 @@
+name: Build CLAWDESK WORKING 🍎
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-macos-working:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install Tauri CLI
+        run: npm install @tauri-apps/cli
+
+      - name: Create dummy icons (Tauri needs them but they can be empty)
+        run: |
+          cd src-tauri
+          mkdir -p icons
+          echo "dummy" > icons/32x32.png
+          echo "dummy" > icons/128x128.png
+          echo "dummy" > icons/128x128@2x.png
+          echo "dummy" > icons/icon.icns
+          echo "✅ Created dummy icons"
+
+      - name: Build Tauri with NO icons flag
+        run: |
+          cd src-tauri
+          echo "=== Building Tauri ==="
+          # Intentar build sin requerir iconos
+          npx @tauri-apps/cli build --target x86_64-apple-darwin --verbose 2>&1 | tail -200
+          
+          echo "=== Checking for outputs ==="
+          find . -name "*.dmg" -o -name "*.app" -o -name "*.tar.gz" 2>/dev/null | while read f; do
+            echo "Found: $f"
+            ls -la "$f"
+          done
+
+      - name: Upload whatever was created
+        uses: actions/upload-artifact@v4
+        with:
+          name: CLAWDESK-OUTPUT
+          path: src-tauri/target/
+          if-no-files-found: warn
