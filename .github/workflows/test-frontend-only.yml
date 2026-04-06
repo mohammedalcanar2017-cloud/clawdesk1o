@@ -1,0 +1,50 @@
+name: TEST Frontend Only 🎯
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-frontend:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Show Node.js and npm versions
+        run: |
+          echo "Node.js: $(node --version)"
+          echo "npm: $(npm --version)"
+          echo "=== package.json dependencies ==="
+          cat package.json | grep -A50 '"dependencies"' | head -20
+
+      - name: Try npm install with debug
+        run: |
+          echo "=== npm install ==="
+          npm install --loglevel=verbose 2>&1 | tail -100
+          echo "npm install exit code: $?"
+
+      - name: Try npm run build with MAX debug
+        run: |
+          echo "=== npm run build ==="
+          # Añadir variables de entorno para debugging
+          NODE_OPTIONS="--max-old-space-size=4096" \
+          npm run build 2>&1 | tee /tmp/build.log
+          
+          echo "=== Build log (last 200 lines) ==="
+          tail -200 /tmp/build.log
+          
+          echo "=== Build exit code: $? ==="
+
+      - name: Check what was built
+        run: |
+          echo "=== dist directory ==="
+          ls -la dist/ 2>/dev/null || echo "No dist directory"
+          echo "=== node_modules size ==="
+          du -sh node_modules 2>/dev/null || echo "No node_modules"
