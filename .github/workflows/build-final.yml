@@ -1,0 +1,150 @@
+name: Build CLAWDESK FINAL 🏁
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-final:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install Rust and Tauri dependencies
+        run: |
+          # Instalar Rust
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source $HOME/.cargo/env
+          
+          # Instalar target macOS
+          rustup target add x86_64-apple-darwin
+          
+          # Instalar Tauri CLI
+          npm install @tauri-apps/cli
+
+      - name: Fix Tauri configuration for macOS
+        run: |
+          cd src-tauri
+          
+          # Crear iconos reales usando sips (nativo macOS)
+          mkdir -p icons
+          
+          # Crear PNG 32x32
+          sips -s format png --setProperty formatOptions default -z 32 32 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out icons/32x32.png 2>/dev/null || true
+          
+          # Crear PNG 128x128  
+          sips -s format png --setProperty formatOptions default -z 128 128 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out icons/128x128.png 2>/dev/null || true
+          
+          # Crear PNG 256x256 (2x)
+          sips -s format png --setProperty formatOptions default -z 256 256 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out icons/128x128@2x.png 2>/dev/null || true
+          
+          # Copiar icono del sistema como .icns
+          cp /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns icons/icon.icns 2>/dev/null || true
+          
+          # Si falla lo anterior, crear iconos dummy
+          if [ ! -f icons/icon.icns ]; then
+            echo "Creating dummy icons..."
+            echo "dummy" > icons/32x32.png
+            echo "dummy" > icons/128x128.png  
+            echo "dummy" > icons/128x128@2x.png
+            echo "dummy" > icons/icon.icns
+          fi
+
+      - name: Build Tauri with proper macOS settings
+        run: |
+          cd src-tauri
+          echo "=== STARTING FINAL BUILD ==="
+          
+          # Configurar entorno Rust
+          source $HOME/.cargo/env
+          
+          # Build con configuración explícita
+          TAURI_PRIVATE_KEY="" \
+          TAURI_KEY_PASSWORD="" \
+          npx @tauri-apps/cli build \
+            --target x86_64-apple-darwin \
+            --verbose \
+            --config '{
+              "build": {
+                "beforeBuildCommand": "npm run build",
+                "devPath": "http://localhost:1420", 
+                "distDir": "../dist"
+              },
+              "package": {
+                "productName": "CLAWDESK",
+                "version": "1.0.0"
+              },
+              "tauri": {
+                "bundle": {
+                  "active": true,
+                  "targets": ["dmg", "app"],
+                  "identifier": "com.clawdesk.ultimate",
+                  "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns"],
+                  "macOS": {
+                    "frameworks": [],
+                    "minimumSystemVersion": "10.13",
+                    "exceptionDomain": "",
+                    "signingIdentity": null,
+                    "providerShortName": null,
+                    "entitlements": null
+                  }
+                },
+                "allowlist": {
+                  "all": true
+                }
+              }
+            }' 2>&1 | tee /tmp/build.log
+          
+          echo "=== BUILD COMPLETE ==="
+          echo "Last 100 lines of build log:"
+          tail -100 /tmp/build.log
+
+      - name: Find and package outputs
+        run: |
+          cd src-tauri
+          echo "=== SEARCHING FOR OUTPUTS ==="
+          
+          # Buscar en todos los lugares posibles
+          find . -type f -name "*.dmg" 2>/dev/null | while read f; do
+            echo "✅ Found DMG: $f"
+            ls -la "$f"
+            cp "$f" /tmp/clawdesk.dmg 2>/dev/null || true
+          done
+          
+          find . -type d -name "*.app" 2>/dev/null | while read d; do
+            echo "✅ Found APP: $d"
+            ls -la "$d"
+            # Crear zip del .app
+            zip -r /tmp/clawdesk-app.zip "$d" 2>/dev/null || true
+          done
+          
+          # Si no hay DMG, crear uno manualmente
+          if [ ! -f /tmp/clawdesk.dmg ]; then
+            echo "⚠️ No DMG found, checking target directory..."
+            ls -la target/ 2>/dev/null || echo "No target directory"
+            ls -la target/release/ 2>/dev/null || echo "No release directory"
+            ls -la target/x86_64-apple-darwin/ 2>/dev/null || echo "No darwin directory"
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CLAWDESK-FINAL
+          path: |
+            /tmp/clawdesk.dmg
+            /tmp/clawdesk-app.zip
+            src-tauri/target/release/
+          if-no-files-found: warn
