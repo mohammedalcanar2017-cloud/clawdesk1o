@@ -1,0 +1,115 @@
+name: TEST Tauri Basics 🔬
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-tauri:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install ONLY frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Test if Rust is available
+        run: |
+          echo "=== Testing Rust ==="
+          which rustc || echo "rustc not found"
+          which cargo || echo "cargo not found"
+          
+          # Intentar instalar Rust si no está
+          if ! command -v rustc &> /dev/null; then
+            echo "Installing Rust..."
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source $HOME/.cargo/env
+          fi
+          
+          rustc --version
+          cargo --version
+
+      - name: Test if Tauri CLI works
+        run: |
+          echo "=== Testing Tauri ==="
+          npx @tauri-apps/cli --version || echo "Tauri CLI failed"
+          
+          # Intentar instalar Tauri
+          npm list @tauri-apps/cli || npm install @tauri-apps/cli
+
+      - name: Try to compile Rust code ONLY (no bundle)
+        run: |
+          cd src-tauri
+          echo "=== Trying cargo build ==="
+          
+          # Configurar Rust
+          source $HOME/.cargo/env
+          
+          # Intentar compilar SOLO el código Rust
+          cargo build --target x86_64-apple-darwin --verbose 2>&1 | tail -100
+          
+          echo "=== Cargo build result ==="
+          if [ -f "target/x86_64-apple-darwin/debug/clawdesk" ]; then
+            echo "✅ Rust binary compiled successfully!"
+            ls -la target/x86_64-apple-darwin/debug/clawdesk
+          else
+            echo "❌ Rust binary NOT compiled"
+            echo "Checking target directory:"
+            ls -la target/ 2>/dev/null || echo "No target directory"
+          fi
+
+      - name: Create absolute minimum tauri.conf.json
+        run: |
+          cd src-tauri
+          cat > tauri.conf.json << 'EOF'
+          {
+            "build": {
+              "beforeBuildCommand": "npm run build",
+              "devPath": "http://localhost:1420",
+              "distDir": "../dist"
+            },
+            "package": {
+              "productName": "CLAWDESK",
+              "version": "1.0.0"
+            },
+            "tauri": {
+              "bundle": {
+                "active": false
+              },
+              "allowlist": {
+                "all": false
+              }
+            }
+          }
+          EOF
+          echo "Created minimal tauri.conf.json"
+
+      - name: Try tauri dev (development mode)
+        run: |
+          cd src-tauri
+          echo "=== Trying tauri dev ==="
+          
+          # Intentar iniciar tauri en modo desarrollo (timeout después de 30s)
+          timeout 30 npx @tauri-apps/cli dev 2>&1 | tail -50 || echo "Tauri dev timed out (expected)"
+
+      - name: Final diagnosis
+        run: |
+          echo "=== FINAL DIAGNOSIS ==="
+          echo "1. Frontend built: $(ls -la dist/index.html 2>/dev/null && echo '✅' || echo '❌')"
+          echo "2. Rust installed: $(which rustc 2>/dev/null && echo '✅' || echo '❌')"
+          echo "3. Tauri CLI installed: $(npx @tauri-apps/cli --version 2>/dev/null && echo '✅' || echo '❌')"
+          echo "4. Rust compiled: $(ls -la src-tauri/target/x86_64-apple-darwin/debug/clawdesk 2>/dev/null 2>&1 && echo '✅' || echo '❌')"
+          echo ""
+          echo "=== RECOMMENDATION ==="
+          echo "If Rust doesn't compile, Tauri CANNOT work."
+          echo "We need to fix Rust compilation first."
