@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CLAWDESK TEST DIRECT</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 30px;
+            background: #1a1a1a;
+            color: white;
+            font-family: -apple-system, sans-serif;
+            height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 3px solid #3b82f6;
+            border-radius: 15px;
+            padding: 30px;
+            background: #2d2d2d;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        h1 {
+            color: #3b82f6;
+            text-align: center;
+            font-size: 2.8em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        
+        .goal-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+        }
+        
+        button.secondary {
+            background: #475569;
+        }
+        
+        button.secondary:hover {
+            background: #334155;
+        }
+        
+        .logs {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 20px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .log-entry {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .status {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 10px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        
+        .success {
+            color: #10b981;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 CLAWDESK DIRECT</h1>
+        <div class="subtitle">Versión de prueba • HTML directo • 100% funcional</div>
+        
+        <div class="goal-box">
+            <textarea id="goal" placeholder="Escribe lo que quieres automatizar...&#10;Ejemplo: 'Abre Chrome, busca información y guarda captura'">Abre Chrome y busca "clima en Madrid"</textarea>
+        </div>
+        
+        <div class="buttons">
+            <button onclick="startAgent()">🚀 EJECUTAR AGENTE</button>
+            <button onclick="simulateClick()" class="secondary">🖱️ SIMULAR CLICK</button>
+            <button onclick="simulateType()" class="secondary">⌨️ SIMULAR TECLADO</button>
+            <button onclick="clearLogs()" class="secondary">🧹 LIMPIAR LOGS</button>
+        </div>
+        
+        <div class="logs" id="logs">
+            <div class="log-entry">✅ <strong>CLAWDESK DIRECT</strong> cargado correctamente</div>
+            <div class="log-entry">📅 <strong>Fecha:</strong> <span id="dateText"></span></div>
+            <div class="log-entry">💻 <strong>Plataforma:</strong> <span id="platformText"></span></div>
+            <div class="log-entry">🚀 <strong>Estado:</strong> <span class="success" id="statusText">Listo para ejecutar</span></div>
+        </div>
+        
+        <div class="status">
+            <div>🦀 CLAWDESK v1.0</div>
+            <div id="timeText">00:00:00</div>
+            <div>Modo: HTML Directo</div>
+        </div>
+    </div>
+    
+    <script>
+        // Estado
+        let isRunning = false;
+        let step = 0;
+        
+        // Actualizar fecha y hora
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('dateText').textContent = now.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('timeText').textContent = now.toLocaleTimeString();
+            document.getElementById('platformText').textContent = navigator.platform + ' • ' + navigator.userAgent.split(' ')[0];
+        }
+        
+        // Actualizar cada segundo
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+        
+        // Funciones principales
+        function startAgent() {
+            if (isRunning) {
+                addLog('⚠️', 'El agente ya está ejecutando');
+                return;
+            }
+            
+            const goal = document.getElementById('goal').value.trim();
+            if (!goal) {
+                addLog('❌', 'Escribe un objetivo primero');
+                return;
+            }
+            
+            isRunning = true;
+            step = 0;
+            updateStatus();
+            
+            addLog('🎯', '<strong>OBJETIVO INICIADO:</strong>');
+            addLog('📝', `"${goal}"`);
+            addLog('🧠', 'IA analizando el objetivo...');
+            
+            // Simular ejecución paso a paso
+            const steps = [
+                { delay: 1000, message: '📋 Plan generado: 4 pasos identificados' },
+                { delay: 2000, message: '⚡ Paso 1/4: Preparando sistema...' },
+                { delay: 3000, message: '⚡ Paso 2/4: Ejecutando acciones...' },
+                { delay: 4000, message: '⚡ Paso 3/4: Verificando resultados...' },
+                { delay: 5000, message: '⚡ Paso 4/4: Finalizando tarea...' },
+                { delay: 6000, message: '✅ <strong>¡TAREA COMPLETADA EXITOSAMENTE!</strong>' }
+            ];
+            
+            steps.forEach((s, index) => {
+                setTimeout(() => {
+                    addLog(s.message.split(' ')[0], s.message);
+                    step = index + 1;
+                    
+                    if (index === steps.length - 1) {
+                        isRunning = false;
+                        updateStatus();
+                        addLog('🏁', 'El agente está listo para una nueva tarea');
+                    }
+                }, s.delay);
+            });
+        }
+        
+        function simulateClick() {
+            addLog('🖱️', '<strong>SIMULACIÓN DE CLICK</strong>');
+            addLog('📍', 'Posición del mouse obtenida: (754, 392)');
+            addLog('👆', 'Click izquierdo simulado en coordenadas');
+            addLog('📊', 'Elemento identificado: Botón "Buscar"');
+        }
+        
+        function simulateType() {
+            const texts = [
+                "Hola, soy CLAWDESK",
+                "Estoy automatizando tu PC",
+                "Puedo controlar mouse y teclado",
+                "Y ejecutar tareas complejas"
+            ];
+            
+            addLog('⌨️', '<strong>SIMULACIÓN DE TECLADO</strong>');
+            
+            texts.forEach((text, i) => {
+                setTimeout(() => {
+                    addLog('⚡', `Escribiendo: "${text}"`);
+                }, i * 500);
+            });
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = `
+                <div class="log-entry">🧹 <strong>LOGS LIMPIADOS</strong></div>
+                <div class="log-entry">💡 Escribe un objetivo arriba y haz clic en 🚀 EJECUTAR AGENTE</div>
+            `;
+            updateDateTime();
+        }
+        
+        function addLog(emoji, message) {
+            const logsDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `<strong>${emoji}</strong> ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        function updateStatus() {
+            const statusEl = document.getElementById('statusText');
+            if (isRunning) {
+                statusEl.textContent = `Ejecutando (Paso ${step}/6)`;
+                statusEl.className = 'success';
+            } else {
+                statusEl.textContent = 'Listo para ejecutar';
+                statusEl.className = 'success';
+            }
+        }
+        
+        // Inicializar
+        window.addEventListener('DOMContentLoaded', () => {
+            addLog('🚀', '<strong>CLAWDESK DIRECT INICIALIZADO</strong>');
+            addLog('💡', 'Esta es una versión de prueba HTML puro');
+            addLog('🔧', 'Para versión completa con Electron, ejecuta: <code>./run-ultra-simple.sh</code>');
+        });
+    </script>
+</body>
+</html>
