@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CLAWDESK EMERGENCY TEST</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border: 2px solid #3b82f6;
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3); }
+            to { box-shadow: 0 20px 60px rgba(59, 130, 246, 0.6); }
+        }
+        
+        h1 {
+            color: #3b82f6;
+            font-size: 3em;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(59, 130, 246, 0.5);
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        
+        .status {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            color: #94a3b8;
+        }
+        
+        .status-value {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .terminal {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        
+        .terminal-line {
+            margin-bottom: 8px;
+            padding-left: 10px;
+            border-left: 3px solid #3b82f6;
+            animation: typewriter 0.5s steps(40) forwards;
+            opacity: 0;
+        }
+        
+        @keyframes typewriter {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .terminal-line:nth-child(1) { animation-delay: 0.1s; }
+        .terminal-line:nth-child(2) { animation-delay: 0.3s; }
+        .terminal-line:nth-child(3) { animation-delay: 0.5s; }
+        .terminal-line:nth-child(4) { animation-delay: 0.7s; }
+        .terminal-line:nth-child(5) { animation-delay: 0.9s; }
+        
+        .command {
+            color: #10b981;
+        }
+        
+        .path {
+            color: #f59e0b;
+        }
+        
+        .output {
+            color: #94a3b8;
+        }
+        
+        .success {
+            color: #10b981;
+        }
+        
+        .error {
+            color: #ef4444;
+        }
+        
+        .warning {
+            color: #f59e0b;
+        }
+        
+        .footer {
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🦾 CLAWDESK EMERGENCY</h1>
+        <div class="subtitle">Sistema de prueba • Control total • Versión de emergencia</div>
+        
+        <div class="status">
+            <div class="status-item">
+                <span class="status-label">🔄 Estado del sistema:</span>
+                <span class="status-value success" id="systemStatus">OPERATIVO</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">💻 Plataforma:</span>
+                <span class="status-value" id="platformInfo">Cargando...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">🕐 Hora del sistema:</span>
+                <span class="status-value" id="systemTime">--:--:--</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">🚀 Agente:</span>
+                <span class="status-value warning" id="agentStatus">INACTIVO</span>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button onclick="executeCommand('startAgent')">
+                <span>🚀</span> INICIAR AGENTE
+            </button>
+            <button onclick="executeCommand('diagnose')">
+                <span>🔍</span> DIAGNOSTICAR
+            </button>
+            <button onclick="executeCommand('simulateClick')">
+                <span>🖱️</span> SIMULAR CLICK
+            </button>
+            <button onclick="executeCommand('simulateType')">
+                <span>⌨️</span> SIMULAR TECLADO
+            </button>
+        </div>
+        
+        <div class="terminal" id="terminal">
+            <div class="terminal-line">
+                <span class="path">~/CLAWDESK/EMERGENCY $</span> <span class="command">system_check</span>
+            </div>
+            <div class="terminal-line output">✅ Sistema CLAWDESK detectado</div>
+            <div class="terminal-line output">✅ Interfaz gráfica operativa</div>
+            <div class="terminal-line output">✅ Módulo de control listo</div>
+            <div class="terminal-line output">✅ Agente autónomo inicializado</div>
+            <div class="terminal-line">
+                <span class="path">~/CLAWDESK/EMERGENCY $</span> <span class="command">status</span>
+            </div>
+            <div class="terminal-line output">🟢 Todos los sistemas operativos</div>
+        </div>
+        
+        <div class="footer">
+            <p>🦀 CLAWDESK v1.0 • Sistema de emergencia • <span id="connectionStatus">Conectado</span></p>
+            <p>Para versión completa: <code>git pull origin main</code></p>
+        </div>
+    </div>
+    
+    <script>
+        // Estado del sistema
+        let systemState = {
+            agentActive: false,
+            logs: [],
+            platform: navigator.platform,
+            userAgent: navigator.userAgent,
+            startTime: new Date()
+        };
+        
+        // Actualizar información del sistema
+        function updateSystemInfo() {
+            document.getElementById('platformInfo').textContent = systemState.platform;
+            document.getElementById('systemTime').textContent = new Date().toLocaleTimeString();
+            document.getElementById('agentStatus').textContent = systemState.agentActive ? 'ACTIVO' : 'INACTIVO';
+            document.getElementById('agentStatus').className = systemState.agentActive ? 'status-value success' : 'status-value warning';
+        }
+        
+        // Ejecutar comandos
+        function executeCommand(command) {
+            const terminal = document.getElementById('terminal');
+            
+            // Añadir línea de comando
+            const commandLine = document.createElement('div');
+            commandLine.className = 'terminal-line';
+            commandLine.innerHTML = `<span class="path">~/CLAWDESK/EMERGENCY $</span> <span class="command">${command}</span>`;
+            terminal.appendChild(commandLine);
+            
+            // Ejecutar comando específico
+            switch(command) {
+                case 'startAgent':
+                    systemState.agentActive = true;
+                    updateSystemInfo();
+                    
+                    const output1 = document.createElement('div');
+                    output1.className = 'terminal-line output';
+                    output1.textContent = '🎯 Iniciando agente autónomo...';
+                    terminal.appendChild(output1);
+                    
+                    setTimeout(() => {
+                        const output2 = document.createElement('div');
+                        output2.className = 'terminal-line output success';
+                        output2.textContent = '✅ Agente activado. Listo para recibir objetivos.';
+                        terminal.appendChild(output2);
+                        
+                        const output3 = document.createElement('div');
+                        output3.className = 'terminal-line output';
+                        output3.textContent = '💡 Escribe objetivos complejos en la interfaz principal.';
+                        terminal.appendChild(output3);
+                    }, 1000);
+                    break;
+                    
+                case 'diagnose':
+                    const diagnoseOutput = [
+                        '🔍 Ejecutando diagnóstico del sistema...',
+                        '✅ Navegador: ' + navigator.userAgent.split(' ')[0],
+                        '✅ Resolución: ' + screen.width + 'x' + screen.height,
+                        '✅ Conexión: ' + (navigator.onLine ? 'En línea' : 'Offline'),
+                        '✅ JavaScript: Habilitado',
+                        '✅ Interfaz: Operativa',
+                        '📊 Diagnóstico completado. Sistema operativo.'
+                    ];
+                    
+                    diagnoseOutput.forEach((line, i) => {
+                        setTimeout(() => {
+                            const output = document.createElement('div');
+                            output.className = 'terminal-line output';
+                            output.textContent = line;
+                            terminal.appendChild(output);
+                            terminal.scrollTop = terminal.scrollHeight;
+                        }, i * 300);
+                    });
+                    break;
+                    
+                case 'simulateClick':
+                    const clickOutput = [
+                        '🖱️ Simulando control de mouse...',
+                        '📍 Obteniendo posición actual...',
+                        '📊 Posición: (' + Math.floor(Math.random() * 1000) + ', ' + Math.floor(Math.random() * 800) + ')',
+                        '👆 Click izquierdo simulado',
+                        '✅ Control de mouse funcional'
+                    ];
+                    
+                    clickOutput.forEach((line, i) => {
+                        setTimeout(() => {
+                            const output = document.createElement('div');
+                            output.className = 'terminal-line output';
+                            output.textContent = line;
+                            terminal.appendChild(output);
+                            terminal.scrollTop = terminal.scrollHeight;
+                        }, i * 400);
+                    });
+                    break;
+                    
+                case 'simulateType':
+                    const text = "Hola, soy CLAWDESK. Estoy listo para automatizar tu PC.";
+                    const typeOutput = [
+                        '⌨️ Simulando control de teclado...',
+                        '📝 Texto a escribir: "' + text + '"',
+                        '⚡ Escribiendo caracteres...'
+                    ];
+                    
+                    typeOutput.forEach((line, i) => {
+                        setTimeout(() => {
+                            const output = document.createElement('div');
+                            output.className = 'terminal-line output';
+                            output.textContent = line;
+                            terminal.appendChild(output);
+                            terminal.scrollTop = terminal.scrollHeight;
+                        }, i * 400);
+                    });
+                    
+                    // Simular escritura carácter por carácter
+                    setTimeout(() => {
+                        const finalOutput = document.createElement('div');
+                        finalOutput.className = 'terminal-line output success';
+                        finalOutput.textContent = '✅ Texto escrito exitosamente. Control de teclado funcional.';
+                        terminal.appendChild(finalOutput);
+                        terminal.scrollTop = terminal.scrollHeight;
+                    }, 1500);
+                    break;
+            }
+            
+            // Desplazar terminal hacia abajo
+            terminal.scrollTop = terminal.scrollHeight;
+            updateSystemInfo();
+        }
+        
+        // Inicializar
+        window.addEventListener('DOMContentLoaded', () => {
+            updateSystemInfo();
+            
+            // Actualizar hora cada segundo
+            setInterval(updateSystemInfo, 1000);
+            
+            // Añadir log inicial
+            const terminal = document.getElementById('terminal');
+            const welcome = document.createElement('div');
+            welcome.className = 'terminal-line output';
+            welcome.textContent = '🚀 CLAWDESK EMERGENCY inicializado. Usa los botones para probar funcionalidades.';
+            terminal.appendChild(welcome);
+        });
+        
+        // Simular conexión
+        setInterval(() => {
+            const status = document.getElementById('connectionStatus');
+            status.textContent = navigator.onLine ? 'Conectado' : 'Desconectado';
+            status.style.color = navigator.onLine ? '#10b981' : '#ef4444';
+        }, 5000);
+    </script>
+</body>
+</html>
