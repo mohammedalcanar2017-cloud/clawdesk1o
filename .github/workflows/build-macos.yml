@@ -1,0 +1,69 @@
+name: Build CLAWDESK Ultimate for macOS 🍎
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          rustup target add x86_64-apple-darwin
+
+      - name: Generate placeholder icons (required by Tauri)
+        run: |
+          mkdir -p src-tauri/icons
+          # Create simple placeholder icons
+          echo "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAA" > src-tauri/icons/icon.icns.base64
+          base64 -D -i src-tauri/icons/icon.icns.base64 -o src-tauri/icons/icon.icns 2>/dev/null || true
+          echo "Placeholder icon" > src-tauri/icons/32x32.png
+          echo "Placeholder icon" > src-tauri/icons/128x128.png
+          echo "Placeholder icon" > src-tauri/icons/128x128@2x.png
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Tauri for macOS
+        run: |
+          npm run tauri build -- --target x86_64-apple-darwin --verbose
+        env:
+          TAURI_PRIVATE_KEY: ""
+          TAURI_KEY_PASSWORD: ""
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CLAWDESK-macOS
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/*.app
+          if-no-files-found: error
+
+      - name: Create GitHub Release (if tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: src-tauri/target/release/bundle/dmg/*.dmg
+          generate_release_notes: true
+          prerelease: false

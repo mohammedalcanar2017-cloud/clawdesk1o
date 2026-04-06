@@ -1,7 +1,7 @@
 [package]
 name = "clawdesk-ultimate"
 version = "1.0.0"
-description = "AI Desktop Assistant with Local Vision & Safe Mode"
+description = "CLAWDESK Ultimate - AI Desktop Assistant for macOS"
 authors = ["Mohammed"]
 edition = "2021"
 
