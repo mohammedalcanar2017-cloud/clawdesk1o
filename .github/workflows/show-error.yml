@@ -1,0 +1,59 @@
+name: SHOW ERROR - Force error display 🚨
+
+on:
+  workflow_dispatch:
+
+jobs:
+  show-error:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install with FORCE error display
+        run: |
+          echo "=== CLEANING ==="
+          rm -rf node_modules package-lock.json
+          
+          echo "=== npm install ==="
+          # Capturar TODO el output
+          npm install 2>&1 | tee /tmp/npm-install.log
+          INSTALL_EXIT=$?
+          
+          echo "=== npm install exit code: $INSTALL_EXIT ==="
+          if [ $INSTALL_EXIT -ne 0 ]; then
+            echo "❌ npm install FAILED"
+            echo "Last 100 lines:"
+            tail -100 /tmp/npm-install.log
+            exit 1
+          fi
+
+      - name: Build with FORCE error display
+        run: |
+          echo "=== npm run build ==="
+          # Capturar TODO el output
+          npm run build 2>&1 | tee /tmp/npm-build.log
+          BUILD_EXIT=$?
+          
+          echo "=== npm run build exit code: $BUILD_EXIT ==="
+          echo "=== FULL BUILD LOG ==="
+          cat /tmp/npm-build.log
+          
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "❌ npm run build FAILED"
+            echo "Error was above ↑"
+            exit 1
+          fi
+
+      - name: Show success
+        run: |
+          echo "✅ Frontend built successfully!"
+          echo "dist directory contents:"
+          ls -la dist/
