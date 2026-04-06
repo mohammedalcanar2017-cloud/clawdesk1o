@@ -1,0 +1,79 @@
+name: Build CLAWDESK MINIMAL 🍎
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-macos-minimal:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install Tauri CLI globally
+        run: npm install -g @tauri-apps/cli
+
+      - name: Create REAL icon.icns (required for macOS)
+        run: |
+          cd src-tauri
+          # Crear un icono .icns REAL usando iconutil (macOS nativo)
+          mkdir -p icons.iconset
+          
+          # Crear iconos en diferentes tamaños
+          for size in 16 32 64 128 256 512; do
+            convert -size ${size}x${size} xc:#3498db \
+              -fill white -pointsize $((size/2)) \
+              -gravity center -draw "text 0,0 'C'" \
+              icons.iconset/icon_${size}x${size}.png
+            convert -size $((size*2))x$((size*2)) xc:#3498db \
+              -fill white -pointsize $size \
+              -gravity center -draw "text 0,0 'C'" \
+              icons.iconset/icon_${size}x${size}@2x.png
+          done
+          
+          # Convertir a .icns
+          iconutil -c icns icons.iconset -o icons/icon.icns
+          
+          # Crear iconos PNG también
+          cp icons.iconset/icon_32x32.png icons/32x32.png
+          cp icons.iconset/icon_128x128.png icons/128x128.png
+          cp icons.iconset/icon_128x128@2x.png icons/128x128@2x.png
+
+      - name: Build Tauri with DEBUG output
+        run: |
+          cd src-tauri
+          echo "=== STARTING TAURI BUILD ==="
+          tauri build --target x86_64-apple-darwin --verbose 2>&1 | tee build.log
+          echo "=== BUILD COMPLETE ==="
+          
+          # Buscar outputs
+          echo "=== SEARCHING FOR OUTPUTS ==="
+          find . -type f -name "*.dmg" -o -name "*.app" -o -name "*.tar.gz" -o -name "*.zip" | while read file; do
+            echo "FOUND: $file"
+            ls -la "$file"
+          done
+          
+          # Mostrar estructura de target
+          echo "=== TARGET STRUCTURE ==="
+          find target -type f -name "*.dmg" -o -name "*.app" 2>/dev/null | head -20
+
+      - name: Upload ANY file found
+        uses: actions/upload-artifact@v4
+        with:
+          name: CLAWDESK-macOS-MINIMAL
+          path: |
+            src-tauri/target/**/*
+          if-no-files-found: error
