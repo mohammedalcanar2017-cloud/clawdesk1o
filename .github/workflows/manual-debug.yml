@@ -1,0 +1,71 @@
+name: MANUAL DEBUG - Find the REAL error 🐛
+
+on:
+  workflow_dispatch:
+
+jobs:
+  manual-debug:
+    runs-on: macos-latest
+    
+    steps:
+      - name: 1. Checkout
+        uses: actions/checkout@v4
+        continue-on-error: false
+
+      - name: 2. Show directory structure
+        run: |
+          echo "=== DIRECTORY STRUCTURE ==="
+          ls -la
+          echo "=== src-tauri ==="
+          ls -la src-tauri/
+          echo "=== package.json ==="
+          cat package.json | head -20
+
+      - name: 3. Try npm install (not ci)
+        run: |
+          echo "=== npm install ==="
+          npm install 2>&1 | tail -50
+          echo "npm install exit code: $?"
+
+      - name: 4. Check if frontend builds
+        run: |
+          echo "=== npm run build ==="
+          npm run build 2>&1 | tail -50
+          echo "npm run build exit code: $?"
+          echo "=== dist directory ==="
+          ls -la dist/ 2>/dev/null || echo "No dist directory"
+
+      - name: 5. Check Rust
+        run: |
+          echo "=== Rust check ==="
+          which rustc || echo "rustc not in PATH"
+          which cargo || echo "cargo not in PATH"
+          rustc --version 2>&1 || echo "rustc failed"
+          cargo --version 2>&1 || echo "cargo failed"
+
+      - name: 6. Check Tauri CLI
+        run: |
+          echo "=== Tauri CLI check ==="
+          npx @tauri-apps/cli --version 2>&1 || echo "Tauri CLI failed"
+          echo "=== node_modules exists? ==="
+          ls -la node_modules/@tauri-apps/ 2>/dev/null || echo "No tauri in node_modules"
+
+      - name: 7. Try cargo check (just compile Rust)
+        run: |
+          cd src-tauri
+          echo "=== cargo check ==="
+          cargo check --target x86_64-apple-darwin 2>&1 | tail -100
+          echo "cargo check exit code: $?"
+
+      - name: 8. FINAL DIAGNOSIS
+        run: |
+          echo "=== FINAL DIAGNOSIS ==="
+          echo "1. Repository checked out: ✅"
+          echo "2. npm install: $(npm list 2>/dev/null && echo '✅' || echo '❌')"
+          echo "3. Frontend built: $(ls -la dist/index.html 2>/dev/null && echo '✅' || echo '❌')"
+          echo "4. Rust available: $(which rustc 2>/dev/null && echo '✅' || echo '❌')"
+          echo "5. Tauri CLI: $(npx @tauri-apps/cli --version 2>/dev/null && echo '✅' || echo '❌')"
+          echo "6. Cargo check: $(cd src-tauri && cargo check --target x86_64-apple-darwin 2>&1 | grep -q \"Finished\" && echo '✅' || echo '❌')"
+          echo ""
+          echo "=== NEXT STEPS ==="
+          echo "Find which step above fails and fix THAT."
