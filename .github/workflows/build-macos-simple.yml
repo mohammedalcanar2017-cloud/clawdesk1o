@@ -49,13 +49,39 @@ jobs:
           echo "=== Build artifacts ==="
           find . -name "*.dmg" -o -name "*.app" | xargs -I {} echo "Found: {}"
 
-      - name: Upload ANY artifact found
+      - name: Find and list ALL build outputs
+        run: |
+          echo "=== SEARCHING FOR BUILD OUTPUTS ==="
+          find src-tauri -type f \( -name "*.dmg" -o -name "*.app" -o -name "*.tar.gz" -o -name "*.zip" -o -name "*.pkg" \) | xargs -I {} echo "FOUND: {}"
+          echo "=== TARGET DIRECTORY ==="
+          ls -la src-tauri/target/ || true
+          ls -la src-tauri/target/*/ || true
+          ls -la src-tauri/target/*/*/ || true
+          
+          # Buscar específicamente donde Tauri pone los builds
+          DMG_PATH=$(find src-tauri -name "*.dmg" -type f | head -1)
+          if [ -n "$DMG_PATH" ]; then
+            echo "✅ Found DMG: $DMG_PATH"
+            ls -la "$DMG_PATH"
+            echo "DMG_PATH=$DMG_PATH" >> $GITHUB_ENV
+          else
+            echo "❌ No DMG found"
+          fi
+          
+          APP_PATH=$(find src-tauri -name "*.app" -type d | head -1)
+          if [ -n "$APP_PATH" ]; then
+            echo "✅ Found APP: $APP_PATH"
+            ls -la "$APP_PATH"
+            echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
+          else
+            echo "❌ No APP found"
+          fi
+
+      - name: Upload artifacts (if found)
         uses: actions/upload-artifact@v4
         with:
-          name: CLAWDESK-macOS-SIMPLE
+          name: CLAWDESK-macOS-BUILD
           path: |
-            src-tauri/target/**/*.dmg
-            src-tauri/target/**/*.app
-            src-tauri/target/**/*.tar.gz
-            src-tauri/target/**/*.zip
-          if-no-files-found: warn
+            ${{ env.DMG_PATH }}
+            ${{ env.APP_PATH }}
+          if-no-files-found: ignore

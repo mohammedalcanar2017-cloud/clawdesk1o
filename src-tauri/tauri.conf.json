@@ -1,59 +1,54 @@
 {
-  "package": {
-    "productName": "CLAWDESK Ultimate",
-    "version": "1.0.0"
-  },
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "CLAWDESK",
+  "version": "1.0.0",
+  "identifier": "com.clawdesk.ultimate",
+  
   "build": {
     "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
     "devPath": "http://localhost:1420",
     "distDir": "../dist",
     "withGlobalTauri": false
   },
-  "tauri": {
-    "allowlist": {
-      "all": true
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "identifier": "com.clawdesk.ultimate",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ]
-    },
-    "security": {
-      "csp": "default-src 'self'"
-    },
+  
+  "app": {
     "windows": [
       {
-        "fullscreen": false,
-        "resizable": true,
-        "title": "CLAWDESK Ultimate 🦀",
+        "title": "CLAWDESK Ultimate",
         "width": 1200,
         "height": 800,
-        "minWidth": 800,
-        "minHeight": 600
+        "resizable": true,
+        "fullscreen": false
       }
     ],
-    "bundle": {
-      "active": true,
-      "targets": "dmg",
-      "identifier": "com.clawdesk.ultimate",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns"
-      ],
-      "resources": [],
-      "copyright": "",
-      "category": "DeveloperTool",
-      "shortDescription": "AI Desktop Assistant",
-      "longDescription": "Control your Mac with natural language using AI"
+    "security": {
+      "csp": null
+    }
+  },
+  
+  "bundle": {
+    "active": true,
+    "targets": "dmg",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns"
+    ],
+    "resources": [],
+    "externalBin": [],
+    "copyright": "© 2026 Mohammed",
+    "category": "DeveloperTool",
+    "shortDescription": "AI Desktop Assistant",
+    "longDescription": "Control your Mac with natural language commands",
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.13",
+      "exceptionDomain": "",
+      "signingIdentity": null,
+      "providerShortName": null,
+      "entitlements": null
     }
   }
 }
