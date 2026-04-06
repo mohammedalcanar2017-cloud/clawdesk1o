@@ -1,0 +1,75 @@
+name: DEBUG Tauri Build 🐛
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug-tauri:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Show Rust version
+        run: |
+          rustc --version
+          cargo --version
+
+      - name: Install Tauri CLI
+        run: npm install @tauri-apps/cli
+
+      - name: Create minimal valid icons
+        run: |
+          cd src-tauri
+          mkdir -p icons
+          # PNG válido mínimo (1x1 pixel azul)
+          echo -n -e '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x00\x1d\xa4\xb0\x82\x00\x00\x00\x00IEND\xaeB`\x82' > icons/32x32.png
+          cp icons/32x32.png icons/128x128.png
+          cp icons/32x32.png icons/128x128@2x.png
+          cp icons/32x32.png icons/icon.icns
+          echo "Created minimal PNG icons"
+
+      - name: DEBUG - Run Tauri build with MAXIMUM verbosity
+        run: |
+          cd src-tauri
+          echo "=== STARTING TAURI BUILD ==="
+          # Ejecutar Tauri con máximo debugging
+          RUST_BACKTRACE=1 TAURI_LOG=debug npx @tauri-apps/cli build --target x86_64-apple-darwin --verbose 2>&1 | tee /tmp/tauri-build.log
+          
+          echo "=== BUILD LOG (last 500 lines) ==="
+          tail -500 /tmp/tauri-build.log
+          
+          echo "=== CHECKING FOR OUTPUTS ==="
+          find . -type f -name "*.dmg" -o -name "*.app" -o -name "*.tar.gz" -o -name "*.zip" 2>/dev/null | while read f; do
+            echo "Found: $f"
+            ls -la "$f"
+          done
+          
+          echo "=== TAURI TARGET DIRECTORY STRUCTURE ==="
+          ls -la target/ 2>/dev/null || echo "No target directory"
+          ls -la target/*/ 2>/dev/null || echo "No subdirectories"
+          ls -la target/*/*/ 2>/dev/null || echo "No deeper directories"
+
+      - name: Check if Tauri actually built anything
+        run: |
+          cd src-tauri
+          echo "=== FINAL CHECK ==="
+          if find . -name "*.dmg" -o -name "*.app" | grep -q .; then
+            echo "✅ Tauri GENERATED output files"
+          else
+            echo "❌ Tauri DID NOT generate any .dmg or .app files"
+            echo "This means Tauri is completing but not creating distributable packages"
+          fi
