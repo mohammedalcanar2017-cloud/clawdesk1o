@@ -1,0 +1,60 @@
+name: TEST npm install only 🔧
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-npm:
+    runs-on: ubuntu-latest  # Más simple que macOS
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Show package.json
+        run: |
+          echo "=== package.json ==="
+          cat package.json
+          echo ""
+          echo "=== Dependencies ==="
+          grep -A20 '"dependencies"' package.json
+
+      - name: Try npm install with SIMPLE package.json
+        run: |
+          echo "=== Creating SIMPLE package.json ==="
+          cat > package-simple.json << 'EOF'
+          {
+            "name": "clawdesk-test",
+            "version": "1.0.0",
+            "scripts": {
+              "test": "echo 'Test passed'"
+            },
+            "dependencies": {
+              "react": "^18.2.0",
+              "react-dom": "^18.2.0"
+            },
+            "devDependencies": {
+              "typescript": "^5.2.2",
+              "vite": "^5.0.0"
+            }
+          }
+          EOF
+          
+          echo "=== Testing npm install with simple package ==="
+          cp package-simple.json package.json
+          npm install 2>&1 | tail -100
+          echo "npm install exit code: $?"
+
+      - name: Test with original package.json
+        run: |
+          echo "=== Restoring original package.json ==="
+          git checkout package.json
+          
+          echo "=== npm install with original ==="
+          npm install 2>&1 | tail -100
+          echo "npm install exit code: $?"

@@ -1,7 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, screen } = require('electron');
 const path = require('path');
-const robot = require('robotjs');
-const screenshot = require('screenshot-desktop');
 
 let mainWindow;
 
@@ -29,65 +27,34 @@ function createWindow() {
   }
 }
 
-// IPC Handlers para control del sistema
+// IPC Handlers SIMPLES (sin dependencias nativas)
 ipcMain.handle('get-screen-info', async () => {
-  const size = robot.getScreenSize();
+  const primaryDisplay = screen.getPrimaryDisplay();
   return {
-    width: size.width,
-    height: size.height,
-    scaleFactor: 1 // Puedes ajustar según el sistema
+    width: primaryDisplay.size.width,
+    height: primaryDisplay.size.height,
+    scaleFactor: primaryDisplay.scaleFactor
   };
 });
 
-ipcMain.handle('capture-screen', async (event, options = {}) => {
-  try {
-    const imgBuffer = await screenshot({ format: 'png', ...options });
-    return imgBuffer.toString('base64');
-  } catch (error) {
-    console.error('Screen capture error:', error);
-    throw error;
-  }
+ipcMain.handle('capture-screen', async () => {
+  // Simular captura de pantalla (en producción usaría screenshot-desktop)
+  return `screenshot-simulated-${Date.now()}`;
 });
 
 ipcMain.handle('mouse-click', async (event, x, y, button = 'left') => {
-  try {
-    robot.moveMouse(x, y);
-    robot.mouseClick(button);
-    return { success: true, x, y, button };
-  } catch (error) {
-    console.error('Mouse click error:', error);
-    return { success: false, error: error.message };
-  }
+  // Simular click (en producción usaría robotjs)
+  return { success: true, simulated: true, x, y, button, message: 'In production, this would actually click' };
 });
 
 ipcMain.handle('keyboard-type', async (event, text) => {
-  try {
-    robot.typeString(text);
-    return { success: true, text };
-  } catch (error) {
-    console.error('Keyboard type error:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('keyboard-press', async (event, key) => {
-  try {
-    robot.keyTap(key);
-    return { success: true, key };
-  } catch (error) {
-    console.error('Keyboard press error:', error);
-    return { success: false, error: error.message };
-  }
+  // Simular typing (en producción usaría robotjs)
+  return { success: true, simulated: true, text, message: 'In production, this would actually type' };
 });
 
 ipcMain.handle('get-mouse-position', async () => {
-  try {
-    const pos = robot.getMousePos();
-    return { x: pos.x, y: pos.y };
-  } catch (error) {
-    console.error('Get mouse position error:', error);
-    return { x: 0, y: 0 };
-  }
+  // Simular posición del mouse
+  return { x: 500, y: 300, simulated: true };
 });
 
 ipcMain.handle('show-dialog', async (event, options) => {

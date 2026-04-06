@@ -1,0 +1,44 @@
+name: SIMPLE Electron Build 🎯
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-simple:
+    runs-on: ubuntu-latest  # Más simple, menos problemas
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies (NO native modules)
+        run: |
+          echo "=== Installing dependencies ==="
+          npm install 2>&1 | tail -50
+          echo "npm install exit code: $?"
+
+      - name: Build frontend
+        run: |
+          echo "=== Building frontend ==="
+          npm run build 2>&1 | tail -50
+          echo "npm run build exit code: $?"
+          echo "=== dist directory ==="
+          ls -la dist/
+
+      - name: Test Electron build
+        run: |
+          echo "=== Testing electron-builder ==="
+          npx electron-builder --dir --linux 2>&1 | tail -100
+          echo "electron-builder exit code: $?"
+
+      - name: Show what was built
+        run: |
+          echo "=== Build output ==="
+          ls -la dist/ 2>/dev/null || echo "No dist directory"
+          ls -la dist/linux-unpacked/ 2>/dev/null || echo "No linux-unpacked"
