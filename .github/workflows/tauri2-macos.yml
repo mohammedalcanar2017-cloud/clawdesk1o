@@ -1,0 +1,102 @@
+name: Tauri 2.0 macOS Build 🚀
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-tauri2:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+
+      - name: Install Tauri 2.0 CLI
+        run: npm install @tauri-apps/cli@latest
+
+      - name: Create minimal valid icons
+        run: |
+          cd src-tauri
+          mkdir -p icons
+          
+          # PNG 1x1 pixel válido
+          printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x00\x1d\xa4\xb0\x82\x00\x00\x00\x00IEND\xaeB`\x82' > icons/32x32.png
+          cp icons/32x32.png icons/128x128.png
+          cp icons/32x32.png icons/128x128@2x.png
+          cp icons/32x32.png icons/icon.icns
+
+      - name: Build with Tauri 2.0
+        run: |
+          cd src-tauri
+          echo "=== Building with Tauri 2.0 ==="
+          
+          # Build sin code signing
+          TAURI_SIGNING_PRIVATE_KEY="" \
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD="" \
+          npx @tauri-apps/cli build \
+            --target x86_64-apple-darwin \
+            --config '{
+              "productName": "CLAWDESK",
+              "version": "1.0.0",
+              "identifier": "com.clawdesk.app",
+              "build": {
+                "beforeDevCommand": "npm run dev",
+                "beforeBuildCommand": "npm run build",
+                "devPath": "http://localhost:1420",
+                "distDir": "../dist",
+                "withGlobalTauri": false
+              },
+              "app": {
+                "withGlobalTauri": false,
+                "windows": [
+                  {
+                    "title": "CLAWDESK",
+                    "width": 1200,
+                    "height": 800
+                  }
+                ]
+              },
+              "bundle": {
+                "active": true,
+                "targets": "all",
+                "icon": [
+                  "icons/32x32.png",
+                  "icons/128x128.png",
+                  "icons/128x128@2x.png",
+                  "icons/icon.icns"
+                ],
+                "macOS": {
+                  "signingIdentity": null
+                }
+              }
+            }' 2>&1 | tee /tmp/tauri-build.log
+          
+          echo "=== Build log (last 200 lines) ==="
+          tail -200 /tmp/tauri-build.log
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CLAWDESK-Tauri2
+          path: |
+            src-tauri/target/**/*.dmg
+            src-tauri/target/**/*.app
+            src-tauri/target/**/*.tar.gz
+          if-no-files-found: error
